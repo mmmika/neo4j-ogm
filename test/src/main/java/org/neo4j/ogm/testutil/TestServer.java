@@ -84,7 +84,8 @@ public class TestServer {
          The property "unsupported.dbms.jmx_module.enabled=false" disables JMX monitoring
          We may start multiple instances of the server and without disabling this the 2nd instance would not start.
          */
-        builder = builder.withConfig("unsupported.dbms.jmx_module.enabled", "false");
+        builder = builder.withConfig("unsupported.dbms.jmx_module.enabled", "false")
+        .withConfig("dbms.transaction.timeout", "10");
         LOGGER.info("Creating new instance of {}", builder.getClass());
         return builder;
     }

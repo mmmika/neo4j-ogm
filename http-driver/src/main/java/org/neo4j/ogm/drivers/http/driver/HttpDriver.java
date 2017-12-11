@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * @author vince
  */
 
-public final class HttpDriver extends AbstractConfigurableDriver {
+public class HttpDriver extends AbstractConfigurableDriver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpDriver.class);
 
