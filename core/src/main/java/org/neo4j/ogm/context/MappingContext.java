@@ -526,4 +526,13 @@ public class MappingContext {
             primaryIndexField.writeDirect(entity, id);
         }
     }
+
+    public void clear(Object entity) {
+        ClassInfo classInfo = metaData.classInfo(entity);
+        if (classInfo.isRelationshipEntity()) {
+
+        } else {
+
+        }
+    }
 }

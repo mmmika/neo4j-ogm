@@ -24,6 +24,7 @@ import org.neo4j.ogm.context.MappingContext;
 import org.neo4j.ogm.context.TransientRelationship;
 import org.neo4j.ogm.cypher.compiler.CompileContext;
 import org.neo4j.ogm.cypher.compiler.Compiler;
+import org.neo4j.ogm.exception.OptimisticLockingException;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.model.RowModel;
 import org.neo4j.ogm.request.Statement;
@@ -80,15 +81,10 @@ public class RequestExecutor {
             //If there are statements that depend on new nodes i.e. relationships created between new nodes,
             //we must create the new nodes first, and then use their node IDs when creating relationships between them
             if (compiler.hasStatementsDependentOnNewNodes()) {
-
-                DefaultRequest createNodesRowRequest = new DefaultRequest();
-                createNodesRowRequest.setStatements(compiler.createNodesStatements());
-
                 // execute the statements to create new nodes. The ids will be returned
                 // and will be used in subsequent statements that refer to these new nodes.
-                try (Response<RowModel> response = session.requestHandler().execute(createNodesRowRequest)) {
-                    registerEntityIds(context, response, entityReferenceMappings, relReferenceMappings);
-                }
+                executeStatements(context, entityReferenceMappings, relReferenceMappings,
+                    compiler.createNodesStatements());
 
                 List<Statement> statements = new ArrayList<>();
                 statements.addAll(compiler.createRelationshipsStatements());
@@ -97,27 +93,22 @@ public class RequestExecutor {
                 statements.addAll(compiler.deleteRelationshipStatements());
                 statements.addAll(compiler.deleteRelationshipEntityStatements());
 
-                DefaultRequest defaultRequest = new DefaultRequest();
-                defaultRequest.setStatements(statements);
-
-                try (Response<RowModel> response = session.requestHandler().execute(defaultRequest)) {
-                    registerEntityIds(context, response, entityReferenceMappings, relReferenceMappings);
-                }
+                executeStatements(context, entityReferenceMappings, relReferenceMappings, statements);
             } else { // only update / delete statements
                 List<Statement> statements = compiler.getAllStatements();
-                if (statements.size() > 0) {
-                    DefaultRequest defaultRequest = new DefaultRequest();
-                    defaultRequest.setStatements(statements);
-                    try (Response<RowModel> response = session.requestHandler().execute(defaultRequest)) {
-                        registerEntityIds(context, response, entityReferenceMappings, relReferenceMappings);
-                    }
-                }
+                executeStatements(context, entityReferenceMappings, relReferenceMappings, statements);
             }
 
-        }
-        finally {
+        } catch (OptimisticLockingException e) {
             if (newTransaction) {
-                tx.commit();
+                tx.rollback();
+            }
+            throw e;
+        } finally {
+            if (newTransaction) {
+                if (tx.canCommit()) {
+                    tx.commit();
+                }
                 tx.close();
             }
         }
@@ -126,6 +117,34 @@ public class RequestExecutor {
         updateNodeEntities(context, session, entityReferenceMappings);
         updateRelationshipEntities(context, session, relReferenceMappings);
         updateRelationships(context, session, relReferenceMappings);
+    }
+
+    private void executeStatements(CompileContext context, List<ReferenceMapping> entityReferenceMappings,
+        List<ReferenceMapping> relReferenceMappings, List<Statement> statements) {
+        if (statements.size() > 0) {
+
+            List<Statement> noCheckStatements = new ArrayList<>();
+            for (Statement statement : statements) {
+                if (statement.checkResultsCount()) {
+                    DefaultRequest request = new DefaultRequest(statement);
+                    try (Response<RowModel> response = session.requestHandler().execute(request)) {
+                        List<RowModel> rowModels = response.toList();
+                        if (statement.checkResultsCount()) {
+                            session.optimisticLockingChecker().checkResultsCount(rowModels, statement);
+                        }
+                        registerEntityIds(context, rowModels, entityReferenceMappings, relReferenceMappings);
+                    }
+                } else {
+                    noCheckStatements.add(statement);
+                }
+            }
+
+            DefaultRequest defaultRequest = new DefaultRequest();
+            defaultRequest.setStatements(noCheckStatements);
+            try (Response<RowModel> response = session.requestHandler().execute(defaultRequest)) {
+                registerEntityIds(context, response.toList(), entityReferenceMappings, relReferenceMappings);
+            }
+        }
     }
 
     /**
@@ -139,12 +158,10 @@ public class RequestExecutor {
      * @param response          query response
      * @param entityRefMappings mapping of entity reference used in the compile context and the entity id from the database
      */
-    private void registerEntityIds(CompileContext context, Response<RowModel> response,
+    private void registerEntityIds(CompileContext context, List<RowModel> response,
         List<ReferenceMapping> entityRefMappings, List<ReferenceMapping> relEntityRefMappings) {
 
-        RowModel rowModel;
-
-        while ((rowModel = response.next()) != null) {
+        for (RowModel rowModel : response) {
             Object[] results = rowModel.getValues();
             String[] variables = rowModel.variables();
 

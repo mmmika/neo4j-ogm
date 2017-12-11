@@ -45,8 +45,25 @@ public class ExistingRelationshipStatementBuilder implements CypherStatementBuil
         final Map<String, Object> parameters = new HashMap<>();
         final StringBuilder queryBuilder = new StringBuilder();
 
+        Edge firstEdge = edges.iterator().next();
         if (edges.size() > 0) {
-            queryBuilder.append("UNWIND {rows} AS row MATCH ()-[r]-() WHERE ID(r) = row.relId SET r += row.props ");
+            queryBuilder.append("UNWIND {rows} AS row MATCH ()-[r]-() WHERE ID(r) = row.relId ");
+
+            if (firstEdge.hasVersionProperty()) {
+                // Will generate following:
+                // AND r.`version` = {version} SET r.`version` = r.`version` + 1 WITH r WHERE r.version = {version} + 1
+                queryBuilder.append("AND r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = row.version SET r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` + 1 WITH r,row WHERE r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = row.version + 1 ");
+            }
+
+            queryBuilder.append("SET r += row.props ");
             queryBuilder.append("RETURN ID(r) as ref, ID(r) as id, {type} as type");
             List<Map> rows = new ArrayList<>();
             for (Edge edge : edges) {
@@ -54,15 +71,26 @@ public class ExistingRelationshipStatementBuilder implements CypherStatementBuil
                 rowMap.put("relId", edge.getId());
                 Map<String, Object> props = new HashMap<>();
                 for (Property property : edge.getPropertyList()) {
-                    props.put((String) property.getKey(), property.getValue());
+                    if (!property.equals(edge.getVersion())) {
+                        props.put((String) property.getKey(), property.getValue());
+                    }
                 }
                 rowMap.put("props", props);
+                if (edge.hasVersionProperty()) {
+                    Property version = edge.getVersion();
+                    rowMap.put((String) version.getKey(), version.getValue());
+                }
                 rows.add(rowMap);
             }
             parameters.put("rows", rows);
             parameters.put("type", "rel");
         }
 
-        return statementFactory.statement(queryBuilder.toString(), parameters);
+        if (firstEdge.hasVersionProperty()) {
+            return statementFactory.statement(queryBuilder.toString(), parameters, true, edges.size());
+        } else {
+            return statementFactory.statement(queryBuilder.toString(), parameters);
+
+        }
     }
 }

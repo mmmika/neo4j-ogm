@@ -23,13 +23,31 @@ import org.neo4j.ogm.request.RowModelRequest;
 public class DefaultRowModelRequest extends CypherQuery implements RowModelRequest {
 
     private final static String[] resultDataContents = new String[] { "row" };
+    private boolean checkResultsCount;
+    private int expectedResultsCount;
 
     public DefaultRowModelRequest(String cypher, Map<String, ?> parameters) {
+        this(cypher, parameters, false, 0);
+    }
+
+    public DefaultRowModelRequest(String cypher, Map<String, ?> parameters,
+        boolean checkResultsCount, int expectedResultsCount) {
+
         super(cypher, parameters);
+        this.checkResultsCount = checkResultsCount;
+        this.expectedResultsCount = expectedResultsCount;
     }
 
     // used by object mapper
     public String[] getResultDataContents() {
         return resultDataContents;
+    }
+
+    @Override public boolean checkResultsCount() {
+        return checkResultsCount;
+    }
+
+    @Override public int expectedResultsCount() {
+        return expectedResultsCount;
     }
 }

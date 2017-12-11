@@ -15,6 +15,7 @@ package org.neo4j.ogm.session.request;
 
 import java.util.Map;
 
+import org.neo4j.ogm.request.Statement;
 import org.neo4j.ogm.request.StatementFactory;
 
 /**
@@ -23,7 +24,14 @@ import org.neo4j.ogm.request.StatementFactory;
 public class RowStatementFactory implements StatementFactory {
 
     @Override
-    public RowDataStatement statement(String statement, Map<String, Object> parameters) {
-        return new RowDataStatement(statement, parameters);
+    public Statement statement(String statement, Map<String, Object> parameters) {
+        return statement(statement, parameters, false, 0);
+    }
+
+    @Override
+    public RowDataStatement statement(String statement, Map<String, Object> parameters,
+        boolean checkResultsCount, int count) {
+
+        return new RowDataStatement(statement, parameters, checkResultsCount, count);
     }
 }

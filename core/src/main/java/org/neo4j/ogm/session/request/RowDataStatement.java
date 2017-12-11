@@ -23,6 +23,8 @@ import org.neo4j.ogm.request.Statement;
 public class RowDataStatement implements Statement {
 
     private String statement;
+    private boolean checkResultsCount;
+    private int expectedResultsCount;
     private Map<String, Object> parameters;
     private String[] resultDataContents = new String[] { "row" };
 
@@ -32,6 +34,14 @@ public class RowDataStatement implements Statement {
     public RowDataStatement(String statement, Map<String, Object> parameters) {
         this.statement = statement;
         this.parameters = parameters;
+    }
+
+    public RowDataStatement(String statement, Map<String, Object> parameters, boolean checkResultsCount,
+        int expectedResultsCount) {
+        this.statement = statement;
+        this.parameters = parameters;
+        this.checkResultsCount = checkResultsCount;
+        this.expectedResultsCount = expectedResultsCount;
     }
 
     @Override
@@ -52,5 +62,15 @@ public class RowDataStatement implements Statement {
     @Override
     public boolean isIncludeStats() {
         return false;
+    }
+
+    @Override
+    public boolean checkResultsCount() {
+        return checkResultsCount;
+    }
+
+    @Override
+    public int expectedResultsCount() {
+        return expectedResultsCount;
     }
 }

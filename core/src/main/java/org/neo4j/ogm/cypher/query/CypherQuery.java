@@ -60,4 +60,15 @@ public class CypherQuery implements Statement {
         return false;
     }
 
+    // ** By default queries/statements are not checked for results, only DefaultRowModelRequest is
+
+    @Override
+    public boolean checkResultsCount() {
+        return false;
+    }
+
+    @Override
+    public int expectedResultsCount() {
+        return 0;
+    }
 }

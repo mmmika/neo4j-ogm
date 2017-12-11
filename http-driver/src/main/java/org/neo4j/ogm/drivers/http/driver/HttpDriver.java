@@ -265,6 +265,16 @@ public class HttpDriver extends AbstractConfigurableDriver {
                 public boolean isIncludeStats() {
                     return false;
                 }
+
+                @Override
+                public boolean checkResultsCount() {
+                    return false;
+                }
+
+                @Override
+                public int expectedResultsCount() {
+                    return 0;
+                }
             });
         }
     }

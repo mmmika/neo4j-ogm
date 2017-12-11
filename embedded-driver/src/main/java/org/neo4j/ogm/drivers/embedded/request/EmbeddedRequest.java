@@ -120,11 +120,7 @@ public class EmbeddedRequest implements Request {
                 if (transactionManager.getCurrentTransaction() != null) {
                     logger.debug("Response closed: {}", this);
                     // if the current transaction is an autocommit one, we should commit and close it now,
-                    EmbeddedTransaction tx = (EmbeddedTransaction) transactionManager.getCurrentTransaction();
-                    if (tx.isAutoCommit()) {
-                        tx.commit();
-                        tx.close();
-                    }
+                    commitTransactionIfNeeded();
                 }
             }
 
@@ -133,6 +129,14 @@ public class EmbeddedRequest implements Request {
                 return finalColumns;
             }
         };
+    }
+
+    private void commitTransactionIfNeeded() {
+        EmbeddedTransaction tx = (EmbeddedTransaction) transactionManager.getCurrentTransaction();
+        if (tx.isAutoCommit()) {
+            tx.commit();
+            tx.close();
+        }
     }
 
     @Override

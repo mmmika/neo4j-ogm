@@ -18,6 +18,8 @@ import java.util.Collection;
 import org.neo4j.ogm.cypher.Filter;
 import org.neo4j.ogm.cypher.query.CypherQuery;
 import org.neo4j.ogm.cypher.query.DefaultRowModelRequest;
+import org.neo4j.ogm.metadata.ClassInfo;
+import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.session.Utils;
 import org.neo4j.ogm.session.request.FilteredQuery;
 import org.neo4j.ogm.session.request.FilteredQueryBuilder;
@@ -31,6 +33,21 @@ public class RelationshipDeleteStatements implements DeleteStatements {
 
     public CypherQuery delete(Long id) {
         return new DefaultRowModelRequest("MATCH (n)-[r0]->() WHERE ID(r0) = { id } DELETE r0", Utils.map("id", id));
+    }
+
+    @Override
+    public CypherQuery delete(Long id, Object object, ClassInfo classInfo) {
+        FieldInfo versionField = classInfo.getVersionField();
+        Long version = (Long) versionField.read(object);
+        return new DefaultRowModelRequest("MATCH (n)-[r0]->() "
+            + "  WHERE ID(r0) = {id} AND r0.`" + versionField.property() + "` = {version} "
+            + "SET "
+            + " r0.`" + versionField.property() + "` = r0.`" + versionField.property() + "` + 1 "
+            + "WITH r0 "
+            + " WHERE r0.`" + versionField.property() + "` = {version} + 1 "
+            + "DELETE r0 "
+            + "RETURN DISTINCT ID(r0) AS id", // Use DISTINCT because node may have multiple relationships
+            Utils.map("id", id, "version", version, "type", "rel"), true, 1);
     }
 
     public CypherQuery delete(Collection<Long> ids) {

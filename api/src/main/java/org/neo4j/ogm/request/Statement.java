@@ -28,4 +28,18 @@ public interface Statement {
     String[] getResultDataContents();
 
     boolean isIncludeStats();
+
+    /**
+     * If this statement's results should be checked for number of results
+     *
+     * @return true if check should be performed
+     */
+    boolean checkResultsCount();
+
+    /**
+     * Number of expected results returned by execution of this statement
+     *
+     * @return number of expected results
+     */
+    int expectedResultsCount();
 }

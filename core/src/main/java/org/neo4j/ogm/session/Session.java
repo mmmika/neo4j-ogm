@@ -551,6 +551,16 @@ public interface Session {
     void clear();
 
     /**
+     * Clear entity from the Session
+     *
+     * This will remove entity from current session, with all relationships.
+     * Allows to reload the entity without clearing whole Session.
+     *
+     * @param entity entity to clear, may be node or relationship entity
+     */
+    void clear(Object entity);
+
+    /**
      * Get the existing transaction if available
      *
      * @return an active Transaction, or null if none exists

@@ -35,4 +35,15 @@ public interface Edge {
      */
     String getPrimaryIdName();
 
+    /**
+     * Returns if the relationship entity has version property
+     */
+    boolean hasVersionProperty();
+
+    /**
+     * Return current version of the node, null if the relationship entity is new
+     *
+     * @return version property with current version
+     */
+    Property<String, Long> getVersion();
 }

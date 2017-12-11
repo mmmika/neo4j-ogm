@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.ogm.exception.TransactionException;
 import org.neo4j.ogm.transaction.AbstractTransaction;
 import org.neo4j.ogm.transaction.TransactionManager;
@@ -44,6 +45,9 @@ public class EmbeddedTransaction extends AbstractTransaction {
      */
     public EmbeddedTransaction(TransactionManager transactionManager, Transaction nativeTransaction, Type type) {
         super(transactionManager);
+        if (nativeTransaction instanceof PlaceboTransaction) {
+            LOGGER.debug("placebo Transaction");
+        }
         this.nativeTransaction = nativeTransaction;
         this.type = type; // TODO: implement when support for Embedded in HA Mode has been done
     }

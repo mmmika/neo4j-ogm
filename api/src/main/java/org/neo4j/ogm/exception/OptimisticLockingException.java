@@ -11,19 +11,20 @@
  *  conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
-package org.neo4j.ogm.request;
-
-import java.util.Map;
+package org.neo4j.ogm.exception;
 
 /**
- * Constructs Statements of a particular type.
- *
- * @author Luanne Misquitta
- * @author Mark Angrish
+ * Exception from OGM that signifies an optimistic locking failure
  */
-public interface StatementFactory {
+public class OptimisticLockingException extends RuntimeException {
 
-    Statement statement(String statement, Map<String, Object> parameters);
+    /**
+     * Create exception with given message
+     *
+     * @param message message
+     */
+    public OptimisticLockingException(String message) {
+        super(message);
+    }
 
-    Statement statement(String statement, Map<String, Object> parameters, boolean checkResultsCount, int count);
 }

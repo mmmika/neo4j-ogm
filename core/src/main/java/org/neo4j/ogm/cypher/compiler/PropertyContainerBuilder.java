@@ -11,19 +11,22 @@
  *  conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
-package org.neo4j.ogm.request;
+package org.neo4j.ogm.cypher.compiler;
 
 import java.util.Map;
 
+import org.neo4j.ogm.cypher.compiler.RelationshipBuilder;
+
 /**
- * Constructs Statements of a particular type.
+ * Interface to abstract setting properties on nodes/relationship entities
  *
- * @author Luanne Misquitta
- * @author Mark Angrish
+ * @author Frantisek Hartman
  */
-public interface StatementFactory {
+public interface PropertyContainerBuilder<T> {
 
-    Statement statement(String statement, Map<String, Object> parameters);
+    T addProperty(String key, Object value);
 
-    Statement statement(String statement, Map<String, Object> parameters, boolean checkResultsCount, int count);
+    T addProperties(Map<String, ?> properties);
+
+    T setVersionProperty(String name, Long version);
 }

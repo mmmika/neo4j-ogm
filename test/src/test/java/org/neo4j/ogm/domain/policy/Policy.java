@@ -31,8 +31,8 @@ public class Policy extends DomainObject {
     @Relationship(type = "WRITES_POLICY", direction = "INCOMING")
     private Set<Person> writers = new HashSet<>();
 
-    @Relationship(type = "AUTHORIZED_POLICY", direction = Relationship.INCOMING)
-    private Person authorized;
+    /*@Relationship(type = "AUTHORIZED_POLICY", direction = Relationship.INCOMING)
+    private Person authorized;*/
 
     public Policy() {
     }
@@ -59,11 +59,12 @@ public class Policy extends DomainObject {
 
     @JsonIgnore
     public Person getAuthorized() {
-        return authorized;
+//        return authorized;
+        return null;
     }
 
     @JsonIgnore
     public void setAuthorized(Person authorized) {
-        this.authorized = authorized;
+//        this.authorized = authorized;
     }
 }

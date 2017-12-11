@@ -11,19 +11,22 @@
  *  conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
-package org.neo4j.ogm.request;
+package org.neo4j.ogm.domain.lockinginvalid;
 
-import java.util.Map;
+import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Version;
 
 /**
- * Constructs Statements of a particular type.
- *
- * @author Luanne Misquitta
- * @author Mark Angrish
+ * @author Frantisek Hartman
  */
-public interface StatementFactory {
+@NodeEntity
+public class MultipleVersionFields {
 
-    Statement statement(String statement, Map<String, Object> parameters);
+    Long id;
 
-    Statement statement(String statement, Map<String, Object> parameters, boolean checkResultsCount, int count);
+    @Version
+    Long version;
+
+    @Version
+    Long anotherVersion;
 }

@@ -52,6 +52,20 @@ public class ExistingNodeStatementBuilder implements CypherStatementBuilder {
             queryBuilder.append("UNWIND {rows} as row ")
                 .append("MATCH (n) WHERE ID(n)=row.nodeId ");
 
+            if (firstNode.hasVersionProperty()) {
+                // Will generate following:
+                // AND n.`version` = {version} SET n.`version` = n.`version` + 1 WITH n WHERE n.version = {version} + 1
+                queryBuilder.append("AND n.`")
+                    .append(firstNode.getVersion().getKey())
+                    .append("` = row.version SET n.`")
+                    .append(firstNode.getVersion().getKey())
+                    .append("` = n.`")
+                    .append(firstNode.getVersion().getKey())
+                    .append("` + 1 WITH n,row WHERE n.`")
+                    .append(firstNode.getVersion().getKey())
+                    .append("` = row.version + 1 ");
+            }
+
             String[] removedLabels = firstNode.getRemovedLabels();
             if (removedLabels != null && removedLabels.length > 0) {
                 for (String label : removedLabels) {
@@ -71,13 +85,24 @@ public class ExistingNodeStatementBuilder implements CypherStatementBuilder {
                 rowMap.put("nodeId", node.getId());
                 Map<String, Object> props = new HashMap<>();
                 for (Property property : node.getPropertyList()) {
-                    props.put((String) property.getKey(), property.getValue());
+                    // Don't include version property into props, it will be incremented by the query
+                    if (!property.equals(node.getVersion())) {
+                        props.put((String) property.getKey(), property.getValue());
+                    }
                 }
                 rowMap.put("props", props);
+                if (node.hasVersionProperty()) {
+                    Property version = node.getVersion();
+                    rowMap.put((String) version.getKey(), version.getValue());
+                }
                 rows.add(rowMap);
             }
             parameters.put("type", "node");
             parameters.put("rows", rows);
+
+            if (firstNode.hasVersionProperty()) {
+                return statementFactory.statement(queryBuilder.toString(), parameters, true, rows.size());
+            }
         }
 
         return statementFactory.statement(queryBuilder.toString(), parameters);
