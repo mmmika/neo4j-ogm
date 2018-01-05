@@ -175,5 +175,45 @@ public class SessionCacheOptimisticLockingTest extends MultiDriverTestClass {
         }
     }
 
+    @Test
+    public void shouldLoadNewRelationshipVersionInSessionAfterFailureToDeleteBySave() {
+        Session session1 = sessionFactory.openSession();
+
+        User alice = new User("Alice");
+        User bob = new User("Bob");
+        FriendOf friendOf = alice.addFriend(bob);
+        friendOf.setDescription("a-b");
+        session1.save(friendOf);
+
+        Session session2 = sessionFactory.openSession();
+        FriendOf updated = new FriendOf(alice, bob);
+        updated.setDescription("updated session 2");
+        updated.setId(friendOf.getId());
+        updated.setVersion(0L);
+        session2.save(updated, 0);
+
+        try {
+
+            // session1 has old version of friendOf in session, should fail
+            alice.clearFriends();
+            bob.clearFriends();
+            session1.save(alice);
+
+            fail("Should have thrown OptimisticLockingException");
+        } catch (OptimisticLockingException e) {
+
+            // failed update should remove the instance from Session, on reload we should get the updated instance
+
+            FriendOf loaded = session1.load(FriendOf.class, friendOf.getId());
+            assertThat(loaded.getDescription()).isEqualTo("updated session 2");
+
+            session1.delete(loaded);
+
+
+            loaded = session1.load(FriendOf.class, friendOf.getId());
+            assertThat(loaded).isNull();
+        }
+    }
+
 
 }

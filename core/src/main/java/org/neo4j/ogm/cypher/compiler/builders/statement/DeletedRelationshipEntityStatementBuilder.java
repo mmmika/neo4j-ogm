@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.neo4j.ogm.cypher.compiler.CypherStatementBuilder;
 import org.neo4j.ogm.model.Edge;
+import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.request.Statement;
 import org.neo4j.ogm.request.StatementFactory;
 
@@ -45,21 +46,43 @@ public class DeletedRelationshipEntityStatementBuilder implements CypherStatemen
         final Map<String, Object> parameters = new HashMap<>();
         final StringBuilder queryBuilder = new StringBuilder();
 
+        Edge firstEdge = deletedEdges.iterator().next();
         if (deletedEdges != null && deletedEdges.size() > 0) {
 
-            queryBuilder.append("MATCH ()-[r]-() WHERE ID(r) IN {relIds} DELETE r");
+            queryBuilder.append("UNWIND {rows} AS row MATCH ()-[r]-() WHERE ID(r) = row.relId ");
 
-            List<Long> relIds = new ArrayList<>(deletedEdges.size());
+            if (firstEdge.hasVersionProperty()) {
+                queryBuilder.append("AND r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = row.version SET r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` + 1 WITH r,row WHERE r.`")
+                    .append(firstEdge.getVersion().getKey())
+                    .append("` = row.version + 1 ");
+            }
+            queryBuilder.append("DELETE r RETURN ID(r) as ref, ID(r) as id, {type} as type");
+
             List<Map> rows = new ArrayList<>();
             for (Edge edge : deletedEdges) {
                 Map<String, Object> rowMap = new HashMap<>();
                 rowMap.put("relId", edge.getId());
+                if (edge.hasVersionProperty()) {
+                    Property version = edge.getVersion();
+                    rowMap.put((String) version.getKey(), version.getValue());
+                }
                 rows.add(rowMap);
-                relIds.add(edge.getId());
             }
             parameters.put("rows", rows);
-            parameters.put("relIds", relIds);
+            parameters.put("type", "rel");
         }
-        return statementFactory.statement(queryBuilder.toString(), parameters);
+
+        if (firstEdge.hasVersionProperty()) {
+            return statementFactory.statement(queryBuilder.toString(), parameters, true, deletedEdges.size());
+        } else {
+            return statementFactory.statement(queryBuilder.toString(), parameters);
+
+        }
     }
 }

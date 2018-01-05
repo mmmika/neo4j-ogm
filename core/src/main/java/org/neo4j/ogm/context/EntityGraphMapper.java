@@ -161,8 +161,20 @@ public class EntityGraphMapper implements EntityMapper {
                 LOGGER.debug("context-del: {}", mappedRelationship);
 
                 // tell the compiler to prepare a statement that will delete the relationship from the graph
-                compiler.unrelate(mappedRelationship.getStartNodeId(), mappedRelationship.getRelationshipType(),
-                    mappedRelationship.getEndNodeId(), mappedRelationship.getRelationshipId());
+                RelationshipBuilder builder = compiler.unrelate(
+                    mappedRelationship.getStartNodeId(),
+                    mappedRelationship.getRelationshipType(),
+                    mappedRelationship.getEndNodeId(),
+                    mappedRelationship.getRelationshipId());
+
+                Object entity = mappingContext.getRelationshipEntity(mappedRelationship.getRelationshipId());
+                if (entity != null) {
+                    ClassInfo classInfo = metaData.classInfo(entity);
+                    if (classInfo.hasVersionField()) {
+                        FieldInfo field = classInfo.getVersionField();
+                        builder.setVersionProperty(field.propertyName(), (Long) field.read(entity));
+                    }
+                }
 
                 // remove all nodes that are referenced by this relationship in the mapping context
                 // this will ensure that stale versions of these objects don't exist

@@ -476,6 +476,7 @@ Optimistic locking check is performed for
 * updating properties of nodes and relationship entities
 * deleting nodes via `Session.delete(T)`
 * deleting relationship entities via `Session.delete(T)`
+* deleting relationship entities detected through `Session.save(T)`
 
 When an optimistic locking failure happens following operations are performed on the Session:
 
